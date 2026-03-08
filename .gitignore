@@ -1,0 +1,18 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (nếu project có dùng thư mục vendor)
+vendor/
+
+# Các file chứa biến môi trường và config nhạy cảm (vd: chuỗi kết nối PostgreSQL)
+.env
