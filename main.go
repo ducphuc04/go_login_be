@@ -24,6 +24,7 @@ func main() {
 	users := r.Group("/api/v1/users")
 	{
 		users.POST("", handlers.Register)
+
 	}
 
 	auth := r.Group("/api/v1/auth")
@@ -38,6 +39,8 @@ func main() {
 	{
 		protected.GET("/users/me", handlers.GetMe)
 		protected.DELETE("/auth/token", handlers.Logout)
+		protected.DELETE("/auth/token/all", handlers.LogoutAllDevice)
+		protected.PATCH("/users/me/password", handlers.ChangePassword)
 	}
 
 	r.Run(":8080")

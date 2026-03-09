@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -45,11 +46,11 @@ func generateRefreshToken(user models.User) (string, error) {
 		return "", err
 	}
 
-	config.DB.Create((&models.RefreshToken{
+	config.DB.Create(&models.RefreshToken{
 		UserID:    user.ID,
 		Token:     tokenStr,
 		ExpiresAt: time.Now().Add(time.Hour * 24 * 7).Unix(),
-	}))
+	})
 
 	return tokenStr, nil
 }
@@ -65,6 +66,11 @@ func Register(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.Password != req.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Passwords do not match"})
 		return
 	}
 
@@ -160,6 +166,7 @@ func RefreshToken(c *gin.Context) {
 	var storedToken models.RefreshToken
 	if err := config.DB.Where("token = ? AND revoked = false", body.RefreshToken).First(&storedToken).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token is not valid"})
+		return
 	}
 
 	if time.Now().Unix() > storedToken.ExpiresAt {
@@ -184,10 +191,89 @@ func RefreshToken(c *gin.Context) {
 	})
 }
 
+func ChangePassword(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	var user models.User
+
+	log.Printf("userID: %v", userID)
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not found user"})
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Old password is not correct"})
+		return
+	}
+
+	if req.NewPassword != req.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password mismatch"})
+		return
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	config.DB.Model(&user).Update("password", string(hashed))
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password changed successfully"})
+}
+
+func LogoutAllDevice(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	rawToken, exists := c.Get("raw_token")
+
+	if !exists || rawToken == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not found token"})
+		return
+	}
+
+	tokenStr, ok := rawToken.(string)
+	if !ok || tokenStr == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token is invalid"})
+		return
+	}
+
+	if err := config.DB.Model(&models.RefreshToken{}).
+		Where("user_id = ? AND revoked = false", userID).
+		Update("revoked", true).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := config.DB.Create(&models.BlacklistedToken{Token: tokenStr}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Logout all device successfully"})
+
+}
+
 func GetMe(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"user_id": c.GetUint("user_id"),
-		"email":   c.GetString("email"),
-		"name":    c.GetString("name"),
-	})
+	userID := c.GetUint("user_id")
+
+	var user models.User
+
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not found user"})
+		return
+	}
+
+	log.Printf("user từ DB: %+v", user)
+	log.Printf("response: %+v", user.ToUserResponse())
+
+	c.JSON(http.StatusOK, user.ToUserResponse())
 }
