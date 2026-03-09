@@ -11,6 +11,7 @@ import (
 
 var DB *gorm.DB
 
+// AI
 func InitDB() {
 	connStr := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",

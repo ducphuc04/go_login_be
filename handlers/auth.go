@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// AI
 func generateAccessToken(user models.User) (string, error) {
 	claims := middleware.Claims{
 		UserID: int(user.ID),
@@ -29,6 +30,7 @@ func generateAccessToken(user models.User) (string, error) {
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
 
+// AI
 func generateRefreshToken(user models.User) (string, error) {
 	claims := middleware.Claims{
 		UserID: int(user.ID),
@@ -54,6 +56,8 @@ func generateRefreshToken(user models.User) (string, error) {
 
 	return tokenStr, nil
 }
+
+//AI
 
 func Register(c *gin.Context) {
 	var req models.RegisterRequest
@@ -91,6 +95,7 @@ func Register(c *gin.Context) {
 	})
 }
 
+// KH AI
 func Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -117,6 +122,7 @@ func Login(c *gin.Context) {
 	})
 }
 
+// Kh AI
 func Logout(c *gin.Context) {
 	rawToken, exists := c.Get("raw_token")
 
@@ -140,6 +146,7 @@ func Logout(c *gin.Context) {
 
 }
 
+// AI
 func RefreshToken(c *gin.Context) {
 	var body struct {
 		RefreshToken string `json:"refresh_token" binding:"required"`
@@ -191,6 +198,7 @@ func RefreshToken(c *gin.Context) {
 	})
 }
 
+// Kh AI
 func ChangePassword(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
@@ -230,6 +238,7 @@ func ChangePassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Password changed successfully"})
 }
 
+// AI
 func LogoutAllDevice(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
@@ -262,6 +271,7 @@ func LogoutAllDevice(c *gin.Context) {
 
 }
 
+// Kh AI
 func GetMe(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
