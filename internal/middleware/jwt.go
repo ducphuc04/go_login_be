@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"your-project/config"
-	"your-project/models"
+	"your-project/internal/config"
+	"your-project/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

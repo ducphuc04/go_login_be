@@ -2,10 +2,10 @@ package main
 
 import (
 	"log"
-	"your-project/config"
-	"your-project/handlers"
-	"your-project/middleware"
-	"your-project/models"
+	"your-project/internal/config"
+	"your-project/internal/handlers"
+	"your-project/internal/middleware"
+	models2 "your-project/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -18,13 +18,15 @@ func main() {
 
 	config.InitDB()
 
-	config.DB.AutoMigrate(&models.User{}, &models.RefreshToken{}, &models.BlacklistedToken{})
+	err := config.DB.AutoMigrate(&models2.User{}, &models2.RefreshToken{}, &models2.BlacklistedToken{})
+	if err != nil {
+		return
+	}
 	r := gin.Default()
 
 	users := r.Group("/api/v1/users")
 	{
 		users.POST("", handlers.Register)
-
 	}
 
 	auth := r.Group("/api/v1/auth")
